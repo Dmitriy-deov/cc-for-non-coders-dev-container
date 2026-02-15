@@ -106,20 +106,15 @@ RUN playwright install --with-deps chromium
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder code-server-settings.json /home/coder/.local/share/code-server/User/settings.json
 
-# Course materials: copy to .course-image (pristine) and course (working dir).
-# When a volume is mounted at /home/coder/course/, entrypoint.sh copies
-# from .course-image on first run, so student work persists across restarts.
-COPY --chown=coder:coder course/ /home/coder/.course-image/
-COPY --chown=coder:coder course/ /home/coder/course/
+# Working directory for user projects (empty, populated via volume)
+RUN mkdir -p /home/coder/course
 
 # Claude Code config
 RUN mkdir -p /home/coder/.claude
 COPY --chown=coder:coder claude-settings.json /home/coder/.claude/settings.json
 
-# Skills — available globally (~/.claude/skills/) and in course root (course/.claude/skills/)
+# Skills — available globally (~/.claude/skills/)
 COPY --chown=coder:coder skills/ /home/coder/.claude/skills/
-COPY --chown=coder:coder skills/ /home/coder/.course-image/.claude/skills/
-COPY --chown=coder:coder skills/ /home/coder/course/.claude/skills/
 
 # File Browser config (accessed via auth gateway at /files/)
 RUN mkdir -p /home/coder/.config/filebrowser
@@ -139,12 +134,7 @@ COPY --chown=coder:coder login.html /home/coder/login.html
 # Entrypoint
 COPY --chown=coder:coder entrypoint.sh /home/coder/entrypoint.sh
 
-# Chart.js offline (used by financial-dashboard and quarterly-presentation demos)
-RUN mkdir -p /home/coder/course/assets \
-    && curl -fsSL https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js \
-    -o /home/coder/course/assets/chart.min.js || true
-
-# Pre-cache MCP packages (avoid 25-50 students downloading simultaneously)
+# Pre-cache MCP packages
 RUN npx -y @anthropic-ai/mcp-server-filesystem --help 2>/dev/null || true
 
 # Port 8080 = auth gateway (single entry point)

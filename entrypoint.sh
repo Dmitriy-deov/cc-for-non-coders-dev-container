@@ -12,11 +12,8 @@
 
 set -euo pipefail
 
-# Initialize course directory from image if volume is empty (first run)
-if [ -d /home/coder/.course-image ] && [ ! -f /home/coder/course/.initialized ]; then
-    cp -r --no-preserve=mode,ownership /home/coder/.course-image/. /home/coder/course/ 2>/dev/null || cp -r /home/coder/.course-image/. /home/coder/course/
-    touch /home/coder/course/.initialized
-fi
+# Ensure course working directory exists
+mkdir -p /home/coder/course
 
 # Write Claude Code env config with the active API key
 mkdir -p /home/coder/.claude
@@ -59,7 +56,6 @@ echo ""
 echo -e "\033[1;36m  Claude Code: рабочая среда курса\033[0m"
 echo -e "\033[0;37m  ─────────────────────────────────\033[0m"
 echo -e "  Запустить Claude Code:  \033[1;32mclaude\033[0m"
-echo -e "  Первое демо:            \033[0;33mcd sessions/01-setup/demo/financial-dashboard\033[0m"
 echo -e "  Файловый менеджер:      \033[0;33m/files/\033[0m в адресной строке"
 echo -e "  Переключить API-ключ:   \033[0;33m./switch-api-key.sh [primary|backup]\033[0m"
 echo ""
