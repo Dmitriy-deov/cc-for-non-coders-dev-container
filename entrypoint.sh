@@ -14,7 +14,7 @@ set -euo pipefail
 
 # Initialize course directory from image if volume is empty (first run)
 if [ -d /home/coder/.course-image ] && [ ! -f /home/coder/course/.initialized ]; then
-    cp -a /home/coder/.course-image/. /home/coder/course/
+    cp -r --no-preserve=mode,ownership /home/coder/.course-image/. /home/coder/course/ 2>/dev/null || cp -r /home/coder/.course-image/. /home/coder/course/
     touch /home/coder/course/.initialized
 fi
 
