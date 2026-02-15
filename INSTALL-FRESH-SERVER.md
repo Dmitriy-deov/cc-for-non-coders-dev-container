@@ -246,6 +246,76 @@ docker exec -it cc-course ./switch-api-key.sh primary
 
 ---
 
+## Как не потерять контейнер
+
+> **Главное правило:** `docker compose up` пересоздаёт контейнер при любом изменении конфига. Старый контейнер удаляется автоматически.
+
+### Что НЕ делать
+
+```bash
+# ОПАСНО: если вы поменяли порт/имя в docker-compose.yml и запустили —
+# старый контейнер будет УДАЛЁН и заменён новым
+docker compose up -d
+```
+
+### Безопасная остановка / запуск (без потери данных)
+
+```bash
+# Остановить контейнер (данные сохраняются)
+docker stop cc-course
+
+# Запустить обратно
+docker start cc-course
+
+# Перезапустить (например после зависания)
+docker restart cc-course
+```
+
+### Как запустить второй контейнер рядом с первым
+
+Если нужно два контейнера на разных портах — **не меняйте** существующий `docker-compose.yml`. Вместо этого:
+
+```bash
+# 1. Скопируйте всю директорию
+cp -r cc-for-non-coders-dev-container cc-for-non-coders-dev-container-2
+cd cc-for-non-coders-dev-container-2
+
+# 2. Измените в docker-compose.yml три вещи:
+#    - container_name: другое имя (например claude-course-2)
+#    - ports: другой порт (например 8082:8080)
+#    - volumes: другой volume (например student-data-2)
+
+# 3. Скопируйте .env
+cp ../cc-for-non-coders-dev-container/.env .env
+
+# 4. Запустите — это НЕ затронет первый контейнер
+docker compose up -d
+```
+
+### Бэкап данных студента
+
+```bash
+# Создать бэкап volume в tar-архив
+docker run --rm -v course-data:/data -v $(pwd):/backup \
+  alpine tar czf /backup/course-backup-$(date +%Y%m%d).tar.gz -C /data .
+
+# Восстановить из бэкапа
+docker run --rm -v course-data:/data -v $(pwd):/backup \
+  alpine sh -c "cd /data && tar xzf /backup/course-backup-XXXXXXXX.tar.gz"
+```
+
+### Где хранятся данные
+
+| Что | Где | Переживает пересоздание контейнера? |
+|-----|-----|-------------------------------------|
+| Файлы студента (`/home/coder/course/`) | Docker volume `course-data` | Да |
+| Настройки Claude Code | Внутри контейнера | Нет — создаются заново из `.env` |
+| Образ Docker | `docker images` | Да, пока не удалите вручную |
+
+> **Вывод:** данные студента в volume не теряются при пересоздании контейнера. Но сам контейнер (имя, порт, настройки) пересоздаётся с нуля.
+
+---
+
 ## Troubleshooting
 
 ### Контейнер не запускается
